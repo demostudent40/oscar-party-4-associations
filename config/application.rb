@@ -18,6 +18,20 @@ require "action_cable/engine"
 # you've limited to :test, :development, or :production.
 Bundler.require(*Rails.groups)
 
+# Xata database compatibility - must be loaded before Active Record operations
+if ENV["DATABASE_URL"]&.include?("xata.sh")
+  module XataExtensionPrevention
+    def enable_extension(name, **)
+      Rails.logger&.info "Skipping extension '#{name}' - Xata has it enabled by default"
+      return
+    end
+  end
+
+  ActiveSupport.on_load(:active_record) do
+    ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.prepend(XataExtensionPrevention)
+  end
+end
+
 module OscarPartyAssociations
   class Application < Rails::Application
     # Initialize configuration defaults for originally generated Rails version.
